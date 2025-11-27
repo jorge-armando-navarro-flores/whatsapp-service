@@ -1,0 +1,47 @@
+name: Deploy to Cloud Run
+
+on:
+  push:
+    branches: [ "main" ]
+  workflow_dispatch:
+    inputs:
+      branch:
+        description: 'Branch to run on'
+        required: true
+        default: 'main' # Or your default branch
+
+permissions:
+  id-token: write
+  contents: read
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Authenticate to Google Cloud
+        uses: google-github-actions/auth@v2
+        with:
+          token_format: "access_token"
+          workload_identity_provider: "projects/${{secrets.PROJECT_NUMBER}}/locations/global/workloadIdentityPools/github-pool/providers/github-provider"
+          service_account: "github-ci@${{secrets.PROJECT_ID}}.iam.gserviceaccount.com"
+
+      - name: Configure gcloud
+        run: |
+          gcloud config set project ${{secrets.PROJECT_ID}}
+          gcloud config set run/region us-central1
+          gcloud auth list
+
+      - name: Build and push to Artifact Registry
+        run: |
+          gcloud builds submit --tag "us-central1-docker.pkg.dev/${{secrets.PROJECT_ID}}/cloud-run-source-deploy/${{secrets.SERVICE_NAME}}"
+
+      - name: Deploy to Cloud Run
+        run: |
+          gcloud run deploy ${{secrets.SERVICE_NAME}} \
+            --image="us-central1-docker.pkg.dev/${{secrets.PROJECT_ID}}/cloud-run-source-deploy/${{secrets.SERVICE_NAME}}" \
+            --platform=managed \
+            --region=us-central1 \
+            --allow-unauthenticated
