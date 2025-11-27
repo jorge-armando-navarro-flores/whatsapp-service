@@ -20,7 +20,9 @@ PHONE_NUMBER_ID = os.getenv("PHONE_NUMBER_ID")
 
 if not all([VERIFY_TOKEN, WHATSAPP_TOKEN, PHONE_NUMBER_ID]):
     logger.error("Missing required environment variables.")
-    raise RuntimeError("Missing required environment variables: VERIFY_TOKEN, WHATSAPP_TOKEN, PHONE_NUMBER_ID")
+    raise RuntimeError(
+        "Missing required environment variables: VERIFY_TOKEN, WHATSAPP_TOKEN, PHONE_NUMBER_ID"
+    )
 
 
 @app.get("/")
@@ -35,7 +37,9 @@ async def verify_webhook(request: Request) -> Any:
     params = dict(request.query_params)
     if params.get("hub.verify_token") == VERIFY_TOKEN:
         return int(params.get("hub.challenge"))
-    return JSONResponse(content={"status": "Unauthorized"}, status_code=status.HTTP_403_FORBIDDEN)
+    return JSONResponse(
+        content={"status": "Unauthorized"}, status_code=status.HTTP_403_FORBIDDEN
+    )
 
 
 @app.post("/webhook")
@@ -48,7 +52,10 @@ async def receive_message(req: Request) -> JSONResponse:
         sender = message.get("from")
         if not sender:
             logger.warning("No sender found in message.")
-            return JSONResponse(content={"status": "No sender found"}, status_code=status.HTTP_400_BAD_REQUEST)
+            return JSONResponse(
+                content={"status": "No sender found"},
+                status_code=status.HTTP_400_BAD_REQUEST,
+            )
         sender = "52" + sender[3:]
         logger.info(f"SENDER: {sender}")
         message_id = message.get("id")
@@ -57,10 +64,15 @@ async def receive_message(req: Request) -> JSONResponse:
         reply = "Hi! 👋 This is a FastAPI WhatsApp bot! Yeaaaah 😎!"
         await asyncio.sleep(1)  # optional: simulate delay
         await send_whatsapp_message(sender, reply)
-        return JSONResponse(content={"status": "received"}, status_code=status.HTTP_200_OK)
+        return JSONResponse(
+            content={"status": "received"}, status_code=status.HTTP_200_OK
+        )
     except Exception as e:
         logger.error(f"Error: {e}")
-        return JSONResponse(content={"status": "error", "detail": str(e)}, status_code=status.HTTP_500_INTERNAL_SERVER_ERROR)
+        return JSONResponse(
+            content={"status": "error", "detail": str(e)},
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+        )
 
 
 async def send_whatsapp_message(to: str, message: str) -> None:
